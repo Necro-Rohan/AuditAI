@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import connectDB from './src/config/db.js';
 import cookieParser from "cookie-parser";
+import authRoutes from './src/routes/authRoutes.js';
 
 dotenv.config();
 
@@ -22,6 +22,8 @@ app.use(cookieParser());
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
 });
+
+app.use('/api/auth', authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port http://localhost:${PORT}`);
