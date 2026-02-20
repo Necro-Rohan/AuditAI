@@ -10,7 +10,7 @@ const reviewSchema = new mongoose.Schema({
   month: { type: Number },
   domain: { type: String, required: true, lowercase: true, trim: true },
   entity_name: { type: String, required: true },
-  category: { type: String, required: true, lowercase: true, trim: true },
+  categories: [{ type: String, lowercase: true, trim: true }] 
 });
 
 // Indexes for fast RBAC filtering and Aggregation
@@ -18,4 +18,4 @@ reviewSchema.index({ domain: 1, category: 1 });
 reviewSchema.index({ domain: 1, entity_name: 1 });
 reviewSchema.index({ domain: 1, category: 1, year: 1 });
 
-export default mongoose.model("Review", reviewSchema, "review");
+export default mongoose.model("Review", reviewSchema, "reviews");

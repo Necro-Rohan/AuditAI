@@ -5,3 +5,5 @@ dist/
 .env.local
 .env.development.local
 seed/
+
+src/scripts

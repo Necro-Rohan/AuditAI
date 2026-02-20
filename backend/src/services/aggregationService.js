@@ -1,7 +1,38 @@
 import Review from '../models/Review.model.js';
 
 export const calculateNPS = async (domain, category, user) => {
-  const rbacMatch = { domain, category };
+  let rbacMatch = {
+    year: { $ne: null },
+    month: { $ne: null },
+  };
+
+  const normalizedDomain = domain.trim().toLowerCase();
+  const normalizedCategory = category.trim().toLowerCase();
+
+  const isAllDomains = normalizedDomain === "all";
+  const isAllCategories = normalizedCategory === "all";
+
+  if (user.role === "Admin") {
+    if (!isAllDomains) {
+      rbacMatch.domain = normalizedDomain;
+    }
+
+    if (!isAllCategories) {
+      rbacMatch.categories = { $in: [normalizedCategory] };
+    }
+  } else {
+    if (isAllDomains) {
+      rbacMatch.domain = { $in: user.assignedDomains };
+    } else {
+      rbacMatch.domain = normalizedDomain;
+    }
+
+    if (isAllCategories) {
+      rbacMatch.categories = { $in: user.assignedCategories };
+    } else {
+      rbacMatch.categories = { $in: [normalizedCategory] };
+    }
+  }
 
   const pipeline = [
     { $match: rbacMatch },

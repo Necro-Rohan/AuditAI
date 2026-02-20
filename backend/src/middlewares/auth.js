@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.model.js';
-import AuditLog from '../models/Audit.model.js';
+import AuditLog from "../models/Audit.model.js";
 
 export const verifyTokenAndFetchUser = async (req, res, next) => {
   try {
@@ -33,21 +33,46 @@ export const requireCategoryAccess = async (req, res, next) => {
   const { domain, category } = req.body;
   const user = req.freshUser;
 
-  if (user.role === 'Admin') return next();
+  if (!domain || !category) {
+    return res.status(400).json({ error: "Domain and category are required." });
+  }
 
-  if (!user.assignedCategories.includes(category) || !user.assignedDomains.includes(domain)) {
-    // logging the unauthorized access attempt
-    const auditLog = new AuditLog({
-      user: user._id,
-      action: "Unauthorized Access Attempt",
-      details: { domain, category }
-    });
-    await auditLog.save();
+  const normalizedDomain = domain.trim().toLowerCase();
+  const normalizedCategory = category.trim().toLowerCase();
 
-    return res.status(403).json({ 
-      error: "Security Violation: You are not authorized to query this category or domain." 
+  // Admin bypasses permission check but not validation
+  if (user.role === "Admin") {
+    return next();
+  }
+
+  const isDomainAllowed =
+    normalizedDomain === "all" ||
+    user.assignedDomains.includes(normalizedDomain);
+
+  const isCategoryAllowed =
+    normalizedCategory === "all" ||
+    user.assignedCategories.includes(normalizedCategory);
+
+  if (!isDomainAllowed || !isCategoryAllowed) {
+    try {
+      await AuditLog.create({
+        userId: user._id,
+        user: user.username,
+        userRole: user.role,
+        type: "Unauthorized Access Attempt",
+        action: "Unauthorized Access Attempt",
+        attemptedDomain: normalizedDomain,
+        attemptedCategory: normalizedCategory,
+      });
+    } catch (auditError) {
+      console.error("Failed to save audit log:", auditError);
+    }
+
+    return res.status(403).json({
+      error:
+        "Security Violation: You are not authorized to query this category or domain."
     });
   }
-  
+
   next();
 };
