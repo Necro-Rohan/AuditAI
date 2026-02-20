@@ -34,7 +34,7 @@ export const login = async (req, res) => {
     generateTokenAndSetCookie(user._id, user.role, res);
 
     // sending just the user data
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Login successful',
       user: {
         id: user._id,
@@ -45,7 +45,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error during login' });
+    return res.status(500).json({ error: 'Server error during login' });
   }
 };
 
@@ -55,11 +55,11 @@ export const logout = (req, res) => {
     sameSite: "strict",
     secure: process.env.NODE_ENV === "production"
   });
-  res.status(200).json({ message: 'Logged out successfully' });
+  return res.status(200).json({ message: 'Logged out successfully' });
 };
 
 // Frontend will call this on page load to see if the user is still logged in
 export const getMe = async (req, res) => {
   // req.freshUser is attached by our auth middleware
-  res.status(200).json({ user: req.freshUser }); 
+  return res.status(200).json({ user: req.freshUser }); 
 };

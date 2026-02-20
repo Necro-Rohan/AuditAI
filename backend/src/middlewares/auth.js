@@ -24,7 +24,7 @@ export const verifyTokenAndFetchUser = async (req, res, next) => {
     next();
   } catch (error) {
     res.clearCookie('token');
-    res.status(401).json({ error: 'Invalid or expired token.' });
+    return res.status(401).json({ error: 'Invalid or expired token.' });
   }
 };
 
