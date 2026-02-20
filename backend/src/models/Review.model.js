@@ -8,9 +8,9 @@ const reviewSchema = new mongoose.Schema({
   review_text: { type: String },
   year: { type: Number },
   month: { type: Number },
-  domain: { type: String, required: true },
+  domain: { type: String, required: true, lowercase: true, trim: true },
   entity_name: { type: String, required: true },
-  category: { type: String, required: true },
+  category: { type: String, required: true, lowercase: true, trim: true },
 });
 
 // Indexes for fast RBAC filtering and Aggregation

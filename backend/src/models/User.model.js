@@ -8,8 +8,8 @@ const userSchema = new mongoose.Schema({
     enum: ['Admin', 'Analyst'], 
     required: true 
   },
-  assignedDomains: [{ type: String }],
-  assignedCategories: [{ type: String }],
+  assignedDomains: [{ type: String, lowercase: true, trim: true }],
+  assignedCategories: [{ type: String, lowercase: true, trim: true }],
   isActive: { type: Boolean, default: true } // Soft delete rule
 }, { timestamps: true });
 

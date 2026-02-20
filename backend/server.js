@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import connectDB from './src/config/db.js';
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -11,8 +12,12 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
