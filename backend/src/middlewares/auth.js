@@ -47,11 +47,11 @@ export const requireCategoryAccess = async (req, res, next) => {
 
   const isDomainAllowed =
     normalizedDomain === "all" ||
-    user.assignedDomains.includes(normalizedDomain);
+    user.assignedDomains.some(d => d.toLowerCase() === normalizedDomain);
 
   const isCategoryAllowed =
     normalizedCategory === "all" ||
-    user.assignedCategories.includes(normalizedCategory);
+    user.assignedCategories.some(c => c.toLowerCase() === normalizedCategory);
 
   if (!isDomainAllowed || !isCategoryAllowed) {
     try {
