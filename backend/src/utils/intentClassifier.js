@@ -15,14 +15,18 @@ export const classifyIntent = (query) => {
     "trend", "trends", "show", "plot", "graph", "chart"
   ];
 
-  // Priority 1: Advisory / Strategy
-  if (advisoryKeywords.some((word) => q.includes(word))) return "advisory";
+  const hasKeyword = (keywords) => {
+    return keywords.some((word) => new RegExp(`\\b${word}\\b`, "i").test(q));
+  };
+
+  // Priority 1: Advisory / Strategic Recommendations
+  if (hasKeyword(advisoryKeywords)) return "advisory";
 
   // Priority 2: Summary / Analysis
-  if (summaryKeywords.some((word) => q.includes(word))) return "summary";
+  if (hasKeyword(summaryKeywords)) return "summary";
 
   // Priority 3: Chart / Data
-  if (chartKeywords.some((word) => q.includes(word)) || (q.includes("nps") && chartKeywords.some(word => q.includes(word)))) {
+  if (hasKeyword(chartKeywords) || (/\bnps\b/i.test(q) && /\bshow\b/i.test(q))) {
     return "chart";
   }
 

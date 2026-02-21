@@ -18,7 +18,7 @@ const ChartMessage = ({ title, data }) => {
     <div className="mt-2 w-full max-w-full flex-1 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="mb-4 text-sm font-semibold text-slate-800">{title}</h3>
       
-      <div className="h-[350px] w-full min-w-0">
+      <div className="min-w-0" style={{ width: '100%', height: '300px', position: 'relative' }}>
         <ResponsiveContainer width="99%" height={260}>
           <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />

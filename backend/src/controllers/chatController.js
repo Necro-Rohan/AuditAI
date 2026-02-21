@@ -23,7 +23,7 @@ export const getScopedChatHistory = async (req, res) => {
       createdAt: { $gte: timeThreshold }
     })
       .sort({ createdAt: 1 })
-      .limit(20)
+      .limit(6)
       .lean();
 
     return res.status(200).json(history);
@@ -142,8 +142,17 @@ export const handleChatQuery = async (req, res) => {
     let responsePayload = {};
     let intent = 'unknown';
     let auditData = { mongoAggregationTimeMs: 0, aggregationPipeline: [], filtersApplied: {} };
+    let intentInherited = false;
 
-    const detectedIntent = classifyIntent(lowerQuery);
+    let detectedIntent = classifyIntent(lowerQuery);
+
+    const wordCount = lowerQuery.split(/\s+/).filter(w => w.length > 0).length;
+    const isVagueQuery = wordCount <= 5;
+
+    if (detectedIntent === "unknown" && structuredMemory?.lastIntent && isVagueQuery) {
+      detectedIntent = structuredMemory.lastIntent;
+      intentInherited = true;
+    }
 
     switch (detectedIntent) {
       case "chart":
@@ -190,6 +199,15 @@ export const handleChatQuery = async (req, res) => {
           title: "Unsupported Query",
           data: "Try asking for NPS trends, feedback summaries, or improvement suggestions.",
         };
+    }
+
+    let finalCacheKey = cacheKey;
+    if (intent === "unknown") {
+      finalCacheKey = null; // Don't cache unsupported queries
+    } else if (
+      intent === "summary" && (!auditData.llmLatencyMs || auditData.llmLatencyMs === 0)
+    ) {
+      finalCacheKey = null; // Not caching a failed AI run
     }
     // total execution time
     const totalResponseTimeMs = Date.now() - requestStart;

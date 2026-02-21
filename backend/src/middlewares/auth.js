@@ -30,7 +30,8 @@ export const verifyTokenAndFetchUser = async (req, res, next) => {
 
 // Middleware to block unauthorized categories
 export const requireCategoryAccess = async (req, res, next) => {
-  const { domain, category } = req.body;
+  const domain = req.body?.domain || req.query?.domain;
+  const category = req.body?.category || req.query?.category;
   const user = req.freshUser;
 
   if (!domain || !category) {
