@@ -11,12 +11,6 @@ import { Reports } from './pages/Reports.jsx';
 import { AdminUsers } from './pages/AdminUsers.jsx';
 import { AdminAudit } from './pages/AdminAudit.jsx';
 
-//pages to build
-// const Login = () => <div className="p-8">Login Page (To do)</div>;
-// const Workspace = () => <div className="p-8">Analyst Workspace</div>;
-// const Reports = () => <div className="p-8">Past Reports</div>;
-// const AdminUsers = () => <div className="p-8">Admin: User Management</div>;
-// const AdminAudit = () => <div className="p-8">Admin: Security Logs Content</div>;
 
 function App() {
   return (

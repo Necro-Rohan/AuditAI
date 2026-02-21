@@ -23,15 +23,24 @@ export const verifyTokenAndFetchUser = async (req, res, next) => {
     req.freshUser = user;
     next();
   } catch (error) {
-    res.clearCookie('token');
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    };
+    res.clearCookie("token", cookieOptions);
     return res.status(401).json({ error: 'Invalid or expired token.' });
   }
 };
 
 // Middleware to block unauthorized categories
 export const requireCategoryAccess = async (req, res, next) => {
-  const domain = req.body?.domain || req.query?.domain;
-  const category = req.body?.category || req.query?.category;
+  const safeBody = req.body || {};
+  const safeQuery = req.query || {};
+
+  const domain = safeBody.domain || safeQuery.domain;
+  const category = safeBody.category || safeQuery.category;
+
   const user = req.freshUser;
 
   if (!domain || !category) {

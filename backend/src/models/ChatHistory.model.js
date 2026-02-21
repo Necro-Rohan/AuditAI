@@ -36,4 +36,7 @@ const chatHistorySchema = new mongoose.Schema({
   }
 }, { timestamps: true }); 
 
+chatHistorySchema.index({ cacheKey: 1, createdAt: -1 }); 
+chatHistorySchema.index({ userId: 1, domainAtTime: 1, categoryAtTime: 1, createdAt: -1 });
+
 export default mongoose.model('ChatHistory', chatHistorySchema);

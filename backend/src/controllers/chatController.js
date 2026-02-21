@@ -202,12 +202,10 @@ export const handleChatQuery = async (req, res) => {
     }
 
     let finalCacheKey = cacheKey;
-    if (intent === "unknown") {
-      finalCacheKey = null; // Don't cache unsupported queries
-    } else if (
-      intent === "summary" && (!auditData.llmLatencyMs || auditData.llmLatencyMs === 0)
-    ) {
-      finalCacheKey = null; // Not caching a failed AI run
+    if (intent === "unknown" || responsePayload.type === "error") {
+      finalCacheKey = null; // Do not cache errors
+    } else if (intent === "summary" && (!auditData.llmLatencyMs || auditData.llmLatencyMs === 0)) {
+      finalCacheKey = null; // Do not cache summaries if LLM failed to generate a response
     }
     // total execution time
     const totalResponseTimeMs = Date.now() - requestStart;
@@ -234,6 +232,7 @@ export const handleChatQuery = async (req, res) => {
         mongoAggregationTimeMs: auditData.mongoAggregationTimeMs,
         llmLatencyMs: auditData.llmLatencyMs || 0,
         cacheHit: false,
+        intentInherited: intentInherited,
       },
     });
 

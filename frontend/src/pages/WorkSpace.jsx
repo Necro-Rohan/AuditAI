@@ -19,7 +19,7 @@ const ChartMessage = ({ title, data }) => {
       <h3 className="mb-4 text-sm font-semibold text-slate-800">{title}</h3>
       
       <div className="min-w-0" style={{ width: '100%', height: '300px', position: 'relative' }}>
-        <ResponsiveContainer width="99%" height={260}>
+        <ResponsiveContainer width="99%" height={260} debounce={100}>
           <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
             <XAxis 
