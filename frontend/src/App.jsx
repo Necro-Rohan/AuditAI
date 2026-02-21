@@ -4,9 +4,10 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { ProtectedRoute } from './components/auth/ProtectedRoute.jsx';
 import { PublicRoute } from './components/auth/PublicRoute.jsx';
 import { ROLES } from './config/constants.js';
+import { Login } from './pages/login.jsx';
 
 //pages to build
-const Login = () => <div className="p-8">Login Page (To do)</div>;
+// const Login = () => <div className="p-8">Login Page (To do)</div>;
 const Workspace = () => <div className="p-8">Analyst Workspace</div>;
 const Reports = () => <div className="p-8">Past Reports</div>;
 const AdminUsers = () => <div className="p-8">Admin: User Management</div>;
