@@ -48,6 +48,8 @@ export const calculateNPS = async (domain, category, user) => {
         }
       }
     },
+    { $sort: { "_id.year": -1, "_id.month": -1 } },
+    { limit: 12 },
     { $sort: { "_id.year": 1, "_id.month": 1 } },
     {
       $project: {
@@ -55,18 +57,22 @@ export const calculateNPS = async (domain, category, user) => {
         period: { $concat: [{ $toString: "$_id.year" }, "-", { $toString: "$_id.month" }] },
         totalReviews: 1,
         npsScore: {
-          $cond: [
-            { $eq: ["$totalReviews", 0] },
-            0,
+          $round: [
             {
-              $multiply: [
+              $cond: [
+                { $eq: ["$totalReviews", 0] },
+                0,
                 {
-                  $subtract: [
-                    { $divide: ["$promoters", "$totalReviews"] },
-                    { $divide: ["$detractors", "$totalReviews"] }
+                  $multiply: [
+                    {
+                      $subtract: [
+                        { $divide: ["$promoters", "$totalReviews"] },
+                        { $divide: ["$detractors", "$totalReviews"] }
+                      ]
+                    },
+                    100
                   ]
-                },
-                100
+                }
               ]
             }
           ]
