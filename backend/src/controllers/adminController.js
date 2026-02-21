@@ -16,7 +16,8 @@ export const getAllUsers = async (req, res) => {
 
 export const updateUserPermissions = async (req, res) => {
   try {
-    const { userId, role, assignedDomains, assignedCategories, isActive } = req.body;
+    const { userId } = req.params;
+    const { role, assignedDomains, assignedCategories, isActive } = req.body;
     const adminUser = req.freshUser;
 
     if (!userId) {
