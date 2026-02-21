@@ -1,35 +1,49 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-// import './App.css'
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext.jsx';
+import { ProtectedRoute } from './components/auth/ProtectedRoute.jsx';
+import { PublicRoute } from './components/auth/PublicRoute.jsx';
+import { ROLES } from './config/constants.js';
+
+//pages to build
+const Login = () => <div className="p-8">Login Page (To do)</div>;
+const Workspace = () => <div className="p-8">Analyst Workspace</div>;
+const Reports = () => <div className="p-8">Past Reports</div>;
+const AdminUsers = () => <div className="p-8">Admin: User Management</div>;
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Route */}
+          <Route path="/login" element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+
+          {/* Protected Routes (All Logged-in Users) */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/workspace" element={<Workspace />} />
+            <Route path="/reports" element={<Reports />} />
+
+            {/* Default redirect for logged in users */}
+            <Route path="/" element={<Navigate to="/workspace" replace />} />
+          </Route>
+
+          {/* Admin Only Routes */}
+          <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>
+            <Route path="/admin/users" element={<AdminUsers />} />
+          </Route>
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
