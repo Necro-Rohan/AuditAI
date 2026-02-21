@@ -7,7 +7,7 @@ dotenv.config();
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
 
-export const generateReviewSummary = async (query, domain, category, user) => {
+export const generateReviewSummary = async (query, domain, category, user, structuredMemory = null) => {
   let rbacMatch = {
     review_text: { $exists: true, $ne: "" },
   };
@@ -118,18 +118,27 @@ export const generateReviewSummary = async (query, domain, category, user) => {
 
   // AI PROMPT
   const prompt = `
-    You are an expert enterprise data analyst. Answer the user's query strictly based on the provided customer review excerpts.
-    
-    User Query: "${query}"
-    Context: ${category}
-    
-    Instructions:
-    - Identify the specific reasons for the ratings based ONLY on these quotes.
-    - Do not hallucinate or add external knowledge.
-    - Format in clean Markdown (bullet points).
-    - Keep it concise and professional.
+    You are an enterprise analytics AI assistant.
 
-    Extracted Review Quotes:
+    Current Scope:
+    - Domain: ${domain}
+    - Category: ${category}
+
+    Conversation Memory (Structured JSON):
+    ${structuredMemory ? JSON.stringify(structuredMemory, null, 2) : "null"}
+
+    Instructions:
+    - If Conversation Memory is "null", treat this as a new session and answer independently without looking for past context.
+    - If memory.lastIntent is "chart" and user refers to "it" or "that trend", assume they mean the last chart.
+    - If memory.lastIntent is "summary", assume they refer to prior analysis.
+    - Use structured memory intelligently to answer follow-up questions.
+    - Provide strategic, professional, and highly actionable insights.
+    - Be concise. Do not hallucinate data outside of the provided scope.
+
+    Current Question:
+    ${query}
+
+    Raw Review Data for Context:
     ${reviewContext}
   `;
 

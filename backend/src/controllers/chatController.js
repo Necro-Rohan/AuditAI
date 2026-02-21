@@ -2,6 +2,36 @@ import { generateCacheKey, checkCache } from '../services/cacheService.js';
 import { calculateNPS } from '../services/aggregationService.js';
 import ChatHistory from '../models/ChatHistory.model.js';
 import { generateReviewSummary } from '../services/llmService.js';
+import { classifyIntent } from '../utils/intentClassifier.js';
+
+export const getScopedChatHistory = async (req, res) => {
+  try {
+    const user = req.freshUser;
+    const { domain, category } = req.query;
+
+    if (!domain || !category) {
+      return res.status(400).json({ error: "Domain and category required." });
+    }
+
+    const THIRTY_MINUTES = 30 * 60 * 1000;
+    const timeThreshold = new Date(Date.now() - THIRTY_MINUTES);
+
+    const history = await ChatHistory.find({
+      userId: user._id,
+      domainAtTime: domain.toLowerCase(),
+      categoryAtTime: category.toLowerCase(),
+      createdAt: { $gte: timeThreshold }
+    })
+      .sort({ createdAt: 1 })
+      .limit(20)
+      .lean();
+
+    return res.status(200).json(history);
+  } catch (err) {
+    console.error("History fetch error:", err);
+    return res.status(500).json({ error: "Failed to load history." });
+  }
+};
 
 export const handleChatQuery = async (req, res) => {
   // Start performance timer immediately to capture total execution time including auth and RBAC checks
@@ -49,78 +79,118 @@ export const handleChatQuery = async (req, res) => {
       return res.status(200).json(cachedResponse.finalResponse);
     }
 
+    const THIRTY_MINUTES = 30 * 60 * 1000;
+    const timeThreshold = new Date(Date.now() - THIRTY_MINUTES);
+    
+    const recentHistory = await ChatHistory.find({
+      userId: user._id,
+      domainAtTime: normalizedDomain,
+      categoryAtTime: normalizedCategory,
+      createdAt: { $gte: timeThreshold }
+    }).sort({ createdAt: 1 }).limit(10).lean();
+
+    // Structured JSON Memory Builder ---
+    const buildStructuredMemory = (history) => {
+      if (!history || history.length === 0) return null;
+
+      const memory = {
+        lastIntent: null,
+        lastChart: null,
+        lastSummary: null,
+        previousCharts: []
+      };
+
+      
+      const lastEntry = history[history.length - 1];
+
+      if (lastEntry) {
+        memory.lastIntent = lastEntry.responseType;
+
+        if (lastEntry.responseType === "chart") {
+          memory.lastChart = {
+            title: lastEntry.finalResponse?.title,
+            dataPoints: lastEntry.finalResponse?.data?.length || 0
+          };
+        }
+
+        if (lastEntry.responseType === "summary") {
+          const summaryText = typeof lastEntry.llmResponse === 'string' ? lastEntry.llmResponse 
+                          : typeof lastEntry.finalResponse?.data === 'string' ? lastEntry.finalResponse.data 
+                          : "";
+          memory.lastSummary = {
+            title: lastEntry.finalResponse?.title,
+            // Optimized: Prevent token bloat by slicing to 500 and removing excess whitespace
+            excerpt: summaryText.slice(0, 500).replace(/\s+/g, " "),
+          };
+        }
+      }
+
+      memory.previousCharts = history
+        .filter(h => h.responseType === "chart")
+        .map(h => ({
+          title: h.finalResponse?.title,
+          query: h.query
+        }))
+        .slice(-3);
+
+      return memory;
+    };
+
+    const structuredMemory = buildStructuredMemory(recentHistory);
+
+    // --- Intent Routing ---
     let responsePayload = {};
     let intent = 'unknown';
     let auditData = { mongoAggregationTimeMs: 0, aggregationPipeline: [], filtersApplied: {} };
 
-    // Intent Routing 
-    if (
-      (lowerQuery.includes('nps') || lowerQuery.includes('trend') || lowerQuery.includes('trends'))&&
-      !lowerQuery.includes('summary') && !lowerQuery.includes('why') && !lowerQuery.includes('reason')) {
-      intent = 'chart';
-      
-      const { data, pipeline, executionTimeMs, rbacMatch } = await calculateNPS(normalizedDomain, normalizedCategory, user);
-      
-      responsePayload = {
-        type: 'chart',
-        title: `NPS Trend for ${category}`, // Using original casing for display
-        data: data
-      };
+    const detectedIntent = classifyIntent(lowerQuery);
 
-      auditData = {
-        mongoAggregationTimeMs: executionTimeMs,
-        aggregationPipeline: pipeline,
-        filtersApplied: rbacMatch
-      };
+    switch (detectedIntent) {
+      case "chart":
+        intent = "chart";
+        const { data, pipeline, executionTimeMs, rbacMatch } = await calculateNPS(normalizedDomain, normalizedCategory, user);
+        
+        responsePayload = {
+          type: "chart",
+          title: `NPS Trend for ${category}`,
+          data: data
+        };
 
-    } else if (
-      lowerQuery.includes('summary') ||
-      lowerQuery.includes('why') ||
-      lowerQuery.includes('reason') ||
-      lowerQuery.includes('improve') ||  
-      lowerQuery.includes('feedback') || 
-      lowerQuery.includes('suggestion') ||
-      lowerQuery.includes('recommendation') ||
-      lowerQuery.includes('insight') ||
-      lowerQuery.includes('analysis')
-    ){
-      intent = "summary";
+        auditData = { mongoAggregationTimeMs: executionTimeMs, aggregationPipeline: pipeline, filtersApplied: rbacMatch };
+        break;
 
-      const llmResult = await generateReviewSummary(
-        query,
-        normalizedDomain,
-        normalizedCategory,
-        user,
-      );
+      case "summary":
+      case "advisory":
+        intent = "summary";
+        
+        // Pass the structured JSON memory to the LLM
+        const llmResult = await generateReviewSummary(query, normalizedDomain, normalizedCategory, user, structuredMemory);
+        
+        responsePayload = {
+          type: "summary",
+          title: detectedIntent === "advisory" ? "Strategic Recommendation" : `AI Analysis: ${category}`,
+          data: llmResult.summary,
+        };
 
-      responsePayload = {
-        type: "summary",
-        title: `AI Analysis: ${category}`,
-        data: llmResult.summary,
-      };
+        auditData = {
+          mongoAggregationTimeMs: llmResult.mongoTimeMs,
+          llmLatencyMs: llmResult.llmLatencyMs,
+          llmPrompt: llmResult.prompt,
+          selectedReviewIds: llmResult.reviewIds,
+          quotesExtracted: llmResult.quotesExtracted,
+          filtersApplied: llmResult.rbacMatch,
+        };
+        break;
 
-      auditData = {
-        mongoAggregationTimeMs: llmResult.mongoTimeMs,
-        llmLatencyMs: llmResult.llmLatencyMs,
-        llmPrompt: llmResult.prompt,
-        selectedReviewIds: llmResult.reviewIds,
-        quotesExtracted: llmResult.quotesExtracted,
-        filtersApplied: llmResult.rbacMatch, // Using exact match from service
-      };
-
-    } else {
-      intent = 'unknown';
-      responsePayload = { error: "Query not recognized. Try asking for NPS trends or summaries." };
+      default:
+        intent = "unknown";
+        // Reverted to "error" to maintain strict frontend contract consistency
+        responsePayload = {
+          type: "error", 
+          title: "Unsupported Query",
+          data: "Try asking for NPS trends, feedback summaries, or improvement suggestions.",
+        };
     }
-
-    let finalCacheKey = cacheKey;
-    if (intent === "unknown") {
-      finalCacheKey = null; // Never cache errors
-    } else if (intent === "summary" && (!auditData.llmLatencyMs || auditData.llmLatencyMs === 0))
-    {
-      finalCacheKey = null; // Not caching a failed AI run
-    }
-
     // total execution time
     const totalResponseTimeMs = Date.now() - requestStart;
 

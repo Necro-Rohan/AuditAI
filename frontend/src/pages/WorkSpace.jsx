@@ -99,6 +99,66 @@ export const Workspace = () => {
     "What can we improve based on negative reviews?"
   ];
 
+  // --- Load Persistent History on Mount or Domain/Category Change ---
+  useEffect(() => {
+    const loadHistory = async () => {
+      setIsLoading(true);
+      try {
+        const res = await api.get('/chat/history', {
+          params: { domain, category }
+        });
+
+        if (res.data.length === 0) {
+          // Fresh Session / Context Expired
+          setMessages([
+            {
+              id: crypto.randomUUID(),
+              role: 'ai',
+              type: 'text',
+              content: `Hello ${user?.username}. We've started a fresh context for ${domain} > ${category}. Ask me for NPS trends or strategic insights.`
+            }
+          ]);
+        } else {
+          // Restore Memory
+          const formatted = res.data.flatMap(entry => {
+            const msgs = [];
+            // Rebuild User Message
+            msgs.push({ id: crypto.randomUUID(), role: 'user', content: entry.query });
+            
+            // Rebuild AI Response
+            if (entry.responseType === 'chart' || entry.responseType === 'summary') {
+              msgs.push({
+                id: crypto.randomUUID(),
+                role: 'ai',
+                type: entry.responseType,
+                title: entry.finalResponse?.title,
+                content: entry.finalResponse?.data
+              });
+            }
+            return msgs;
+          });
+
+          // Prepend a discrete "Restored Session" banner bubble
+          setMessages([
+            {
+              id: crypto.randomUUID(),
+              role: 'ai',
+              type: 'text',
+              content: `Restored recent context for ${category}. You can ask follow-up questions.`
+            },
+            ...formatted
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to restore chat history:", err.response || err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [domain, category, user?.username]);
+
   const handleSuggestedClick = (prompt) => {
     setQuery(prompt);
   };
