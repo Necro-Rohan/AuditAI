@@ -67,7 +67,7 @@ export const Login = () => {
                 <CircleUser className="h-4 w-4" />
               </div>
               <input
-                type="text" 
+                type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:text-sm"
@@ -106,6 +106,33 @@ export const Login = () => {
                 placeholder="••••••••"
                 required
               />
+            </div>
+          </div>
+          <div className="pt-2">
+            <p className="mb-3 text-center text-xs font-medium text-slate-500">
+              Or use a demo account
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername("admin"); 
+                  setPassword("password123"); 
+                }}
+                className="flex-1 rounded-lg border border-brand-200 bg-brand-50 py-2 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              >
+                Admin Demo
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername("analyst_services"); 
+                  setPassword("password123"); 
+                }}
+                className="flex-1 rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+              >
+                Analyst Demo
+              </button>
             </div>
           </div>
 
