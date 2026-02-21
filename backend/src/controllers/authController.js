@@ -6,11 +6,11 @@ import User from '../models/User.model.js';
 const generateTokenAndSetCookie = (userId, role, res) => {
   const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: '8h' });
   
-  res.cookie('token', token, {
+  res.cookie("token", token, {
     httpOnly: true, // Prevents XSS attacks
-    secure: process.env.NODE_ENV === 'production', // True if in production (HTTPS)
-    sameSite: 'strict', // Prevents CSRF attacks
-    maxAge: 8 * 60 * 60 * 1000 // 8 hours
+    secure: process.env.NODE_ENV === "production", // True if in production (HTTPS)
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 8 * 60 * 60 * 1000, // 8 hours
   });
 };
 
