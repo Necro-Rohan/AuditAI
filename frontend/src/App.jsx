@@ -7,11 +7,12 @@ import { ROLES } from './config/constants.js';
 import { Login } from './pages/Login.jsx';
 import { DashboardLayout } from './layouts/DashboardLayout.jsx';
 import { Workspace } from './pages/Workspace.jsx';
+import { Reports } from './pages/Reports.jsx';
 
 //pages to build
 // const Login = () => <div className="p-8">Login Page (To do)</div>;
 // const Workspace = () => <div className="p-8">Analyst Workspace</div>;
-const Reports = () => <div className="p-8">Past Reports</div>;
+// const Reports = () => <div className="p-8">Past Reports</div>;
 const AdminUsers = () => <div className="p-8">Admin: User Management</div>;
 const AdminAudit = () => <div className="p-8">Admin: Security Logs Content</div>;
 
